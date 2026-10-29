@@ -138,6 +138,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.status = msg.err.Error()
 			m.recordDebugFailure(msg.err)
+			if stage, _ := debugFailure(msg.err); stage == "fetching KMS public key" {
+				m.focused = 0
+				m.inputs[0].Focus()
+			}
 			if strings.Contains(m.status, "output exists") {
 				m.confirming = true
 			}

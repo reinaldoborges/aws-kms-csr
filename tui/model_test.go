@@ -1,12 +1,14 @@
 package tui
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	csr "github.com/reinaldo/aws-kms-csr"
 )
 
 func TestNewUsesDefaultOutputPath(t *testing.T) {
@@ -79,5 +81,20 @@ func TestRequiredKeyIdentifierIsReported(t *testing.T) {
 	model = updated.(*Model)
 	if model.status != "Key Identifier is required." {
 		t.Fatalf("status = %q", model.status)
+	}
+}
+
+func TestFetchingPublicKeyFailureReturnsFocusToKeyIdentifier(t *testing.T) {
+	model := New(func(Form) ([]byte, error) { return nil, errors.New("unused") })
+	model.inputs[0].Blur()
+	model.focused = 2
+	model.inputs[2].Focus()
+	failure := &csr.KMSAccountError{Stage: "fetching KMS public key", Err: errors.New("invalid key")}
+
+	updated, _ := model.Update(submitResult{err: failure})
+	model = updated.(*Model)
+
+	if model.focused != 0 {
+		t.Fatalf("focused field = %d, want key identifier field 0", model.focused)
 	}
 }

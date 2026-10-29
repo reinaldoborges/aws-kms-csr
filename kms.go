@@ -13,6 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
+	"github.com/aws/smithy-go"
 )
 
 type KMSAPI interface {
@@ -25,7 +26,18 @@ type KMSAccountError struct {
 	Err   error
 }
 
-func (e *KMSAccountError) Error() string      { return fmt.Sprintf("%s: KMS request failed", e.Stage) }
+func (e *KMSAccountError) Error() string {
+	var apiErr smithy.APIError
+	if errors.As(e.Err, &apiErr) {
+		if apiErr.ErrorCode() == "AccessDeniedException" || apiErr.ErrorCode() == "UnauthorizedException" {
+			return fmt.Sprintf("%s: authorization failed; KMS policy must allow kms:GetPublicKey and kms:Sign", e.Stage)
+		}
+		if message := apiErr.ErrorMessage(); message != "" {
+			return fmt.Sprintf("%s: %s (%s)", e.Stage, message, apiErr.ErrorCode())
+		}
+	}
+	return fmt.Sprintf("%s: KMS request failed", e.Stage)
+}
 func (e *KMSAccountError) Unwrap() error      { return e.Err }
 func (e *KMSAccountError) DebugStage() string { return e.Stage }
 func (e *KMSAccountError) DebugErr() error    { return e.Err }
@@ -47,6 +59,9 @@ func NewKMSSigner(ctx context.Context, client KMSAPI, keyID string) (*KMSSigner,
 	output, err := client.GetPublicKey(ctx, &kms.GetPublicKeyInput{KeyId: &keyID})
 	if err != nil {
 		return nil, &KMSAccountError{Stage: "fetching KMS public key", Err: err}
+	}
+	if output == nil {
+		return nil, errors.New("KMS returned an empty public key response")
 	}
 	algorithm, hash, err := signingAlgorithm(output.KeySpec)
 	if err != nil {

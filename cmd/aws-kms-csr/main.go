@@ -55,7 +55,7 @@ func resolveCredentialStatus(ctx context.Context, cfg aws.Config) (missing []str
 	defer cancel()
 	creds, err := cfg.Credentials.Retrieve(probeCtx)
 	if err != nil {
-		missing = append(missing, "Access Key ID", "Secret Access Key")
+		missing = append(missing, "Access Key ID", "Secret Access Key", "Session Token")
 		return missing, ""
 	}
 	return missing, tui.FriendlyCredentialSource(creds.Source, sharedConfigProfile())
