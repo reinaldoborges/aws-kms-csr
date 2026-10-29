@@ -138,7 +138,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.status = msg.err.Error()
 			m.recordDebugFailure(msg.err)
-			if stage, _ := debugFailure(msg.err); stage == "fetching KMS public key" {
+			var actionable interface{ FocusKeyIdentifier() bool }
+			if errors.As(msg.err, &actionable) && actionable.FocusKeyIdentifier() {
 				m.focused = 0
 				m.inputs[0].Focus()
 			}

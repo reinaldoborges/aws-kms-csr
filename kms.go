@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/service/kms"
@@ -33,7 +34,7 @@ func (e *KMSAccountError) Error() string {
 			return fmt.Sprintf("%s: authorization failed; KMS policy must allow kms:GetPublicKey and kms:Sign", e.Stage)
 		}
 		if message := apiErr.ErrorMessage(); message != "" {
-			return fmt.Sprintf("%s: %s (%s)", e.Stage, message, apiErr.ErrorCode())
+			return fmt.Sprintf("%s: %s (%s)", e.Stage, sanitizeServiceMessage(message), apiErr.ErrorCode())
 		}
 	}
 	return fmt.Sprintf("%s: KMS request failed", e.Stage)
@@ -41,6 +42,31 @@ func (e *KMSAccountError) Error() string {
 func (e *KMSAccountError) Unwrap() error      { return e.Err }
 func (e *KMSAccountError) DebugStage() string { return e.Stage }
 func (e *KMSAccountError) DebugErr() error    { return e.Err }
+
+func (e *KMSAccountError) FocusKeyIdentifier() bool {
+	if e.Stage != "fetching KMS public key" {
+		return false
+	}
+	var apiErr smithy.APIError
+	if !errors.As(e.Err, &apiErr) {
+		return false
+	}
+	switch apiErr.ErrorCode() {
+	case "NotFoundException", "ResourceNotFoundException", "ValidationException":
+		return true
+	default:
+		return false
+	}
+}
+
+func sanitizeServiceMessage(message string) string {
+	message = strings.Join(strings.Fields(message), " ")
+	const maxLength = 256
+	if len(message) > maxLength {
+		return message[:maxLength-3] + "..."
+	}
+	return message
+}
 
 type KMSSigner struct {
 	ctx       context.Context
@@ -61,7 +87,10 @@ func NewKMSSigner(ctx context.Context, client KMSAPI, keyID string) (*KMSSigner,
 		return nil, &KMSAccountError{Stage: "fetching KMS public key", Err: err}
 	}
 	if output == nil {
-		return nil, errors.New("KMS returned an empty public key response")
+		return nil, &KMSAccountError{
+			Stage: "fetching KMS public key",
+			Err:   errors.New("KMS returned an empty public key response"),
+		}
 	}
 	algorithm, hash, err := signingAlgorithm(output.KeySpec)
 	if err != nil {
@@ -96,8 +125,17 @@ func (s *KMSSigner) Sign(_ io.Reader, digest []byte, _ crypto.SignerOpts) ([]byt
 	if err != nil {
 		return nil, &KMSAccountError{Stage: "signing CSR with KMS", Err: err}
 	}
+	if output == nil {
+		return nil, &KMSAccountError{
+			Stage: "signing CSR with KMS",
+			Err:   errors.New("KMS returned an empty signature response"),
+		}
+	}
 	if len(output.Signature) == 0 {
-		return nil, errors.New("KMS returned an empty signature")
+		return nil, &KMSAccountError{
+			Stage: "signing CSR with KMS",
+			Err:   errors.New("KMS returned an empty signature"),
+		}
 	}
 	return output.Signature, nil
 }

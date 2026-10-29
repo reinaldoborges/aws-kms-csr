@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aws/smithy-go"
 	tea "github.com/charmbracelet/bubbletea"
 	csr "github.com/reinaldo/aws-kms-csr"
 )
@@ -89,7 +90,10 @@ func TestFetchingPublicKeyFailureReturnsFocusToKeyIdentifier(t *testing.T) {
 	model.inputs[0].Blur()
 	model.focused = 2
 	model.inputs[2].Focus()
-	failure := &csr.KMSAccountError{Stage: "fetching KMS public key", Err: errors.New("invalid key")}
+	failure := &csr.KMSAccountError{
+		Stage: "fetching KMS public key",
+		Err:   &smithy.GenericAPIError{Code: "NotFoundException"},
+	}
 
 	updated, _ := model.Update(submitResult{err: failure})
 	model = updated.(*Model)
