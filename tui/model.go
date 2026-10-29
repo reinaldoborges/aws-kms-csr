@@ -73,7 +73,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q":
+		case "ctrl+c", "esc":
 			m.quitting = true
 			return m, tea.Quit
 		case "r":
@@ -136,12 +136,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.csr = msg.csr
 		if msg.written {
 			m.written = true
-			m.status = "CSR written successfully. Press q to quit."
+			m.status = "CSR written successfully. Press Esc to quit."
 			m.quitting = true
 			return m, tea.Quit
 		} else {
 			m.form.OutputPath = strings.TrimSpace(m.inputs[2].Value())
-			m.status = "CSR generated. Press Enter to write it, or q to quit."
+			m.status = "CSR generated. Press Enter to write it, or Esc to quit."
 		}
 		return m, nil
 	}
@@ -253,7 +253,7 @@ func (m *Model) View() string {
 	if len(m.csr) > 0 {
 		b.WriteString("\n\n" + string(m.csr))
 	}
-	b.WriteString("\nTab/Shift+Tab navigate • Enter submits • r retries • q quits")
+	b.WriteString("\nTab/Shift+Tab navigate • Enter submits • r retries • Esc quits")
 	return b.String()
 }
 

@@ -50,6 +50,26 @@ func TestNewWithCredentialsOmitsSourceLineWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestTypingLetterQDoesNotQuit(t *testing.T) {
+	model := New(func(Form) ([]byte, error) { return []byte("csr"), nil })
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	model = updated.(*Model)
+	if model.quitting {
+		t.Fatal("typing 'q' into a field should not quit the program")
+	}
+	if got := model.inputs[0].Value(); got != "q" {
+		t.Fatalf("Key Identifier = %q, want %q", got, "q")
+	}
+}
+
+func TestEscQuits(t *testing.T) {
+	model := New(func(Form) ([]byte, error) { return []byte("csr"), nil })
+	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	if cmd == nil {
+		t.Fatal("expected Esc to issue a quit command")
+	}
+}
+
 func TestRequiredKeyIdentifierIsReported(t *testing.T) {
 	model := New(func(Form) ([]byte, error) { return []byte("csr"), nil })
 	model.inputs[0].Blur()
