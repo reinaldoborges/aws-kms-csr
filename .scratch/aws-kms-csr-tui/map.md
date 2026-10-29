@@ -20,6 +20,7 @@ Reaching the end of this map means: no open decision remains before a build sess
 
 - Destination, scope, and architecture (TUI library, KMS Signer design, key-type support, subject fields, credential flow, key-identifier input, output handling) settled via the charting session's grilling round. See `GLOSSARY.md` and ADR-0001.
 - [Dependency versions](./issues/04-dependency-versions.md): pinned to `aws-sdk-go-v2/service/kms` v1.62.1, `aws-sdk-go-v2/config` v1.33.12, `charmbracelet/bubbletea` v1.3.10, `bubbles` v1.0.0, `lipgloss` v1.1.0 (the v1 module paths, not Charm's separately-pathed v2 line); credential-chain fallback detected via `cfg.Region == ""` + a short-timeout `cfg.Credentials.Retrieve(ctx)`. Detail on branch `research/dependency-versions`.
+- [TUI screen flow](./issues/01-tui-screen-flow.md): single scrolling form (Variant A) — all fields on one screen, Tab/Shift+Tab focus, inline live validation. Chosen over a full step-by-step wizard and a grouped wizard after trying all three. Prototype on branch `prototype/tui-screen-flow`.
 
 ## Not yet specified
 
