@@ -85,8 +85,8 @@ func TestModelReportsDebugLogPathOnceAfterStageFailure(t *testing.T) {
 	result = model.submitForm(model.form)()
 	updated, _ = model.Update(result)
 	model = updated.(*Model)
-	if strings.Count(model.status, "Debug log: ./aws-kms-csr-debug.log") != 1 {
-		t.Fatalf("status = %q, want debug-log path shown once", model.status)
+	if strings.Contains(model.status, "Debug log: ./aws-kms-csr-debug.log") {
+		t.Fatalf("status = %q, want debug-log path omitted after first failure", model.status)
 	}
 }
 

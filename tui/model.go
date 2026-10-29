@@ -176,10 +176,10 @@ func (m *Model) recordDebugFailure(err error) {
 		return
 	}
 	if m.debugLogger.Log(stage, detail) == nil {
-		m.debugLogShown = true
-		pathMessage := "Debug log: " + m.debugLogger.Path()
-		if !strings.Contains(m.status, pathMessage) {
+		if !m.debugLogShown {
+			pathMessage := "Debug log: " + m.debugLogger.Path()
 			m.status += "\n" + pathMessage
+			m.debugLogShown = true
 		}
 	}
 }
