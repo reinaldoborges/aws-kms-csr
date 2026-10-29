@@ -23,7 +23,7 @@ func main() {
 		os.Exit(1)
 	}
 	missing, credentialSource := resolveCredentialStatus(ctx, cfg)
-	model := tui.NewWithCredentials(func(form tui.Form) ([]byte, error) {
+	model := tui.NewWithDebugLogger(func(form tui.Form) ([]byte, error) {
 		requestConfig := cfg
 		if form.Region != "" {
 			requestConfig.Region = form.Region
@@ -35,7 +35,7 @@ func main() {
 		}
 		client := kms.NewFromConfig(requestConfig)
 		return csr.CreateCSR(ctx, client, form.KeyIdentifier, form.CommonName)
-	}, missing, credentialSource)
+	}, missing, credentialSource, tui.NewFileDebugLogger(tui.DefaultDebugLogPath))
 	if _, err := tea.NewProgram(model).Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

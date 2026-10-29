@@ -25,8 +25,10 @@ type KMSAccountError struct {
 	Err   error
 }
 
-func (e *KMSAccountError) Error() string { return fmt.Sprintf("%s: KMS request failed", e.Stage) }
-func (e *KMSAccountError) Unwrap() error { return e.Err }
+func (e *KMSAccountError) Error() string      { return fmt.Sprintf("%s: KMS request failed", e.Stage) }
+func (e *KMSAccountError) Unwrap() error      { return e.Err }
+func (e *KMSAccountError) DebugStage() string { return e.Stage }
+func (e *KMSAccountError) DebugErr() error    { return e.Err }
 
 type KMSSigner struct {
 	ctx       context.Context

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,6 +35,8 @@ type Model struct {
 	credentialNames  []string
 	credentialSource string
 	submit           Submit
+	debugLogger      DebugLogger
+	debugLogShown    bool
 	quitting         bool
 }
 
@@ -42,6 +45,10 @@ func New(submit Submit) *Model {
 }
 
 func NewWithCredentials(submit Submit, credentialNames []string, credentialSource string) *Model {
+	return NewWithDebugLogger(submit, credentialNames, credentialSource, nil)
+}
+
+func NewWithDebugLogger(submit Submit, credentialNames []string, credentialSource string, debugLogger DebugLogger) *Model {
 	labels := []string{"Key Identifier", "Subject Common Name", "Output Path"}
 	placeholders := []string{"alias/my-signing-key", "example.com", "./request.csr"}
 	for _, name := range credentialNames {
@@ -57,7 +64,13 @@ func NewWithCredentials(submit Submit, credentialNames []string, credentialSourc
 	}
 	inputs[2].SetValue("./request.csr")
 	inputs[0].Focus()
-	return &Model{inputs: inputs, submit: submit, credentialNames: credentialNames, credentialSource: credentialSource}
+	return &Model{
+		inputs:           inputs,
+		submit:           submit,
+		credentialNames:  credentialNames,
+		credentialSource: credentialSource,
+		debugLogger:      debugLogger,
+	}
 }
 
 func credentialPlaceholder(name string) string {
@@ -124,6 +137,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case submitResult:
 		if msg.err != nil {
 			m.status = msg.err.Error()
+			m.recordDebugFailure(msg.err)
 			if strings.Contains(m.status, "output exists") {
 				m.confirming = true
 			}
@@ -148,6 +162,42 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.inputs[m.focused], cmd = m.inputs[m.focused].Update(msg)
 	return m, cmd
+}
+
+func (m *Model) recordDebugFailure(err error) {
+	if m.debugLogger == nil {
+		return
+	}
+	if strings.Contains(err.Error(), "output exists") {
+		return
+	}
+	stage, detail := debugFailure(err)
+	if stage == "" || detail == nil {
+		return
+	}
+	if m.debugLogger.Log(stage, detail) == nil {
+		m.debugLogShown = true
+		pathMessage := "Debug log: " + m.debugLogger.Path()
+		if !strings.Contains(m.status, pathMessage) {
+			m.status += "\n" + pathMessage
+		}
+	}
+}
+
+type debugStageError interface {
+	DebugStage() string
+	DebugErr() error
+}
+
+func debugFailure(err error) (string, error) {
+	var staged debugStageError
+	if errors.As(err, &staged) {
+		return staged.DebugStage(), staged.DebugErr()
+	}
+	if strings.HasPrefix(err.Error(), "writing CSR:") || strings.HasPrefix(err.Error(), "checking output path:") {
+		return "writing CSR", err
+	}
+	return "generating CSR", err
 }
 
 type submitResult struct {
