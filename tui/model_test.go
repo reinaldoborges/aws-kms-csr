@@ -3,6 +3,7 @@ package tui
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -30,6 +31,22 @@ func TestWriteCSRPreservesExistingFileWhenOverwriteDeclined(t *testing.T) {
 	}
 	if string(got) != "old" {
 		t.Fatalf("existing CSR = %q, want old", got)
+	}
+}
+
+func TestNewWithCredentialsShowsResolvedCredentialSource(t *testing.T) {
+	model := NewWithCredentials(func(Form) ([]byte, error) { return []byte("csr"), nil }, nil, "environment variables")
+	view := model.View()
+	if !strings.Contains(view, "Credentials: environment variables") {
+		t.Fatalf("view = %q, want it to contain credential source line", view)
+	}
+}
+
+func TestNewWithCredentialsOmitsSourceLineWhenEmpty(t *testing.T) {
+	model := NewWithCredentials(func(Form) ([]byte, error) { return []byte("csr"), nil }, nil, "")
+	view := model.View()
+	if strings.Contains(view, "Credentials:") {
+		t.Fatalf("view = %q, want no credential source line", view)
 	}
 }
 

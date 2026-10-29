@@ -23,6 +23,7 @@ Reaching the end of this map means: no open decision remains before a build sess
 - [TUI screen flow](./issues/01-tui-screen-flow.md): single scrolling form (Variant A) — all fields on one screen, Tab/Shift+Tab focus, inline live validation. Chosen over a full step-by-step wizard and a grouped wizard after trying all three. Prototype on branch `prototype/tui-screen-flow`.
 - [Error handling and recovery](./issues/02-error-ux.md): preserve the form and entered values; show a persistent status/error area with stage-specific messages, field focus for actionable input failures, and retry from the failed stage. Sanitize details, explain required KMS permissions for authorization failures, preserve generated CSRs on output-path errors, and exit only after success or explicit quit.
 - [Testing strategy](./issues/03-testing-strategy.md): use a narrow `GetPublicKey`/`Sign` seam with deterministic fakes; keep default tests offline and verify the algorithm matrix, KMS request contract, cryptographic CSR output, stable error stages, and TUI state transitions. Real-KMS checks remain opt-in against pre-provisioned resources.
+- [Credential source display](./issues/05-credential-source-display.md): show the resolved credential source by name (env vars, shared config profile, SSO, instance/container role) as an informational line in the persistent status area, only when the default chain supplied something; purely transparency, no change to Credential Fallback prompting.
 
 ## Not yet specified
 

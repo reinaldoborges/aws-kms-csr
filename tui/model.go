@@ -24,23 +24,24 @@ type Form struct {
 type Submit func(Form) ([]byte, error)
 
 type Model struct {
-	inputs          []textinput.Model
-	focused         int
-	status          string
-	csr             []byte
-	form            Form
-	confirming      bool
-	written         bool
-	credentialNames []string
-	submit          Submit
-	quitting        bool
+	inputs           []textinput.Model
+	focused          int
+	status           string
+	csr              []byte
+	form             Form
+	confirming       bool
+	written          bool
+	credentialNames  []string
+	credentialSource string
+	submit           Submit
+	quitting         bool
 }
 
 func New(submit Submit) *Model {
-	return NewWithCredentials(submit, nil)
+	return NewWithCredentials(submit, nil, "")
 }
 
-func NewWithCredentials(submit Submit, credentialNames []string) *Model {
+func NewWithCredentials(submit Submit, credentialNames []string, credentialSource string) *Model {
 	labels := []string{"Key Identifier", "Subject Common Name", "Output Path"}
 	placeholders := []string{"alias/my-signing-key", "example.com", "./request.csr"}
 	for _, name := range credentialNames {
@@ -56,7 +57,7 @@ func NewWithCredentials(submit Submit, credentialNames []string) *Model {
 	}
 	inputs[2].SetValue("./request.csr")
 	inputs[0].Focus()
-	return &Model{inputs: inputs, submit: submit, credentialNames: credentialNames}
+	return &Model{inputs: inputs, submit: submit, credentialNames: credentialNames, credentialSource: credentialSource}
 }
 
 func credentialPlaceholder(name string) string {
@@ -240,6 +241,9 @@ func (m *Model) View() string {
 		}
 	}
 
+	if m.credentialSource != "" {
+		b.WriteString("\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("8")).Render("Credentials: "+m.credentialSource) + "\n")
+	}
 	if m.status != "" {
 		b.WriteString("\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(m.status) + "\n")
 	}
