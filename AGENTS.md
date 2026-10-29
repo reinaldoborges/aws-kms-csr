@@ -1,3 +1,7 @@
+# aws-kms-csr
+
+Generates and signs a Certificate Signing Request (CSR) using a private key held in AWS KMS; the key never leaves KMS, so signing happens via KMS's sign API rather than local key material.
+
 ## Agent skills
 
 ### Issue tracker

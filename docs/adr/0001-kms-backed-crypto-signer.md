@@ -1,0 +1,3 @@
+# Sign the CSR via a crypto.Signer wrapping KMS, not a local private key
+
+KMS asymmetric keys cannot export their private key material by design, so the CSR must be built and signed without the key ever being local. We implement Go's `crypto.Signer` interface (`Public()` via KMS `GetPublicKey`, `Sign()` via KMS `Sign` with `MessageType=DIGEST`) and hand it to the standard library's `x509.CreateCertificateRequest`, rather than shelling out to an external tool (e.g. an OpenSSL PKCS#11/engine bridge) or requiring the user to pre-stage a local key. This keeps the whole CSR flow in-process and portable, at the cost of implementing key-spec-to-algorithm mapping ourselves instead of delegating to an existing engine.
